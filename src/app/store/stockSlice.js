@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { stockService } from "../services/stockService";
 
-export const getStock = createAsyncThunk("stock/getStock", async () => {
+export const getStock = createAsyncThunk("stock/getStock", async (params) => {
   try {
-    const response = await stockService.getStock();
+    const response = await stockService.getStock(params);
     return response;
   } catch (error) {
     console.error("Error fetching stock data:", error);

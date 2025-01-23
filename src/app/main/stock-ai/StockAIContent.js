@@ -28,10 +28,9 @@ function StockAIContent() {
   const [company, setCompany] = useState("");
   const loading = useSelector(selectStockLoading);
   const data = useSelector(selectStock);
-  console.log(data);
 
   const fetchAnalysis = () => {
-    dispatch(getStock());
+    dispatch(getStock({ symbol, company }));
   };
 
   return (
