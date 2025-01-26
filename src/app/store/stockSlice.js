@@ -15,6 +15,7 @@ export const selectStockLoading = ({ stock }) => stock.loading;
 export const selectStock = ({ stock }) => stock.data;
 
 const initialState = {
+  data: {},
   loading: false,
 };
 
