@@ -1,76 +1,41 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
-} from "@mui/material";
+import { Typography, Paper } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 
-const PaginatedTable = ({ data }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+const StockTable = ({ data }) => {
+  const columns = [
+    { field: "dTime", headerName: "#", width: 250 }, // Numeric pixel width
+    { field: "open", headerName: "Open", width: 100 },
+    { field: "high", headerName: "High", width: 100 },
+    {
+      field: "low",
+      headerName: "Low",
+      width: 100,
+    },
+    { field: "close", headerName: "Close", width: 100 },
+    { field: "volume", headerName: "Volume", width: 150 },
+    { field: "Trend", headerName: "Trend", width: 100 },
+  ];
 
-  // Handle page change
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  // Handle rows per page change
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to the first page
-  };
-
-  // Slice the data for the current page
-  const paginatedData = data.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const rows = data.map((row, index) => ({
+    id: index + 1,
+    dTime: row.dTime,
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume,
+    Trend: row.Trend,
+  }));
 
   return (
-    <Paper className="w-full">
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: "30%" }}>#</TableCell>
-              <TableCell sx={{ width: "12%" }}>Open</TableCell>
-              <TableCell sx={{ width: "12%" }}>High</TableCell>
-              <TableCell sx={{ width: "12%" }}>Low</TableCell>
-              <TableCell sx={{ width: "12%" }}>Close</TableCell>
-              <TableCell sx={{ width: "12%" }}>Volume</TableCell>
-              <TableCell sx={{ width: "10%" }}>Trend</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedData.map((row, index) => (
-              <TableRow key={index}>
-                <TableCell>{row.dTime}</TableCell>
-                <TableCell>{row.open}</TableCell>
-                <TableCell>{row.high}</TableCell>
-                <TableCell>{row.low}</TableCell>
-                <TableCell>{row.close}</TableCell>
-                <TableCell>{row.volume}</TableCell>
-                <TableCell>{row.Trend}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        component="div"
-        count={data.length} // Total number of rows
-        page={page} // Current page
-        onPageChange={handleChangePage} // Handle page change
-        rowsPerPage={rowsPerPage} // Number of rows per page
-        onRowsPerPageChange={handleChangeRowsPerPage} // Handle rows per page change
-        rowsPerPageOptions={[5, 10, 25]} // Rows per page options
+    <Paper className="w-full h-400">
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        pageSize={5}
+        rowsPerPageOptions={[5, 10, 25]}
       />
     </Paper>
   );
@@ -86,11 +51,11 @@ const MarketTrends = ({ data, plot }) => {
       <Typography variant="h5" style={{ marginTop: "20px" }}>
         Market Trends
       </Typography>
-      <img src={plot} alt="Market Trends" />
+      <img src={plot} alt="Market Trends" className="max-h-640" />
       <Typography variant="h5" style={{ marginTop: "20px" }}>
         Stock Data
       </Typography>
-      <PaginatedTable className="w-full" data={data} />
+      <StockTable className="w-full" data={data} />
     </motion.div>
   );
 };
