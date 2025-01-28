@@ -6,8 +6,14 @@ import Error404Page from "../main/404/Error404Page";
 import authConfigs from "../main/auth/authConfigs";
 import DashboardConfig from "./../main/dashboard/DashboardConfig";
 import StockAIConfig from "./../main/stock-ai/StockAIConfig";
+import BackgroundAIConfig from "./../main/background-ai/BackgroundAIConfig";
 
-const routeConfigs = [...authConfigs, DashboardConfig, StockAIConfig];
+const routeConfigs = [
+  ...authConfigs,
+  DashboardConfig,
+  StockAIConfig,
+  BackgroundAIConfig,
+];
 
 const routes = [
   ...FuseUtils.generateRoutesFromConfigs(
