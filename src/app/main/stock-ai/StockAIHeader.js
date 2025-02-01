@@ -45,6 +45,7 @@ function StockAIHeader(props) {
             fullWidth
             value={company}
             onChange={(e) => setCompany(e.target.value)}
+            className="hidden"
           />
           <LoadingButton
             variant="contained"

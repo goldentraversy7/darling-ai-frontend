@@ -33,6 +33,7 @@
     "lodash": "4.17.21",
     "marked": "4.3.0",
     "material-ui-popup-state": "5.0.8",
+    "memoize-one": "^6.0.0",
     "mobile-detect": "1.4.5",
     "mobx": "^6.9.0",
     "moment": "2.29.4",
