@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Create axios instance with default config
-const api = axios.create({ baseURL: "http://localhost:5001/api" });
+const api = axios.create({ baseURL: "http://5.180.24.82:5000/api" });
 
 // Request interceptor
 api.interceptors.request.use(

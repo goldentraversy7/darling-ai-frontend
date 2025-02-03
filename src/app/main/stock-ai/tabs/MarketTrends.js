@@ -51,7 +51,7 @@ const MarketTrends = ({ data, plot }) => {
       <Typography variant="h5" style={{ marginTop: "20px" }}>
         Market Trends
       </Typography>
-      <img src={plot} alt="Market Trends" className="max-h-640" />
+      {plot && <img src={plot} alt="Market Trends" className="max-h-640" />}
       <Typography variant="h5" style={{ marginTop: "20px" }}>
         Stock Data
       </Typography>
