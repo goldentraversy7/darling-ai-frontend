@@ -56,7 +56,7 @@ const ArticleTable = ({ articles }) => {
 
   const rows = articles.map((row, index) => ({
     id: index + 1,
-    date: row.Date,
+    date: row.dDate,
     title: row.Title,
     URL: row.URL,
     summary: row.Summary,
