@@ -1,17 +1,216 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Typography, Paper } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { Line, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, registerables } from "chart.js";
+import Chart from "react-apexcharts";
+import { createChart } from "lightweight-charts";
 import _ from "lodash";
 
-const StockChart = ({ data }) => {
+const formatNumber = (value) => {
+  return _.isNumber(value) && !_.isNaN(value) ? value.toFixed(4) : null;
+};
+
+const StockChart = ({ stockData, predictions }) => {
+  const [chartData, setChartData] = useState(null);
+
+  useEffect(() => {
+    if (!stockData || stockData.length === 0) {
+      console.warn("Stock data is empty or undefined");
+      return;
+    }
+
+    // Process Historical Stock Data for Candlestick Chart
+    const processedStockData = stockData.map((item) => ({
+      x: new Date(_.get(item, "dDate", "")), // Convert Date String to Date Object
+      y: [
+        formatNumber(_.get(item, "open", 0)), // Open
+        formatNumber(_.get(item, "high", 0)), // High
+        formatNumber(_.get(item, "low", 0)), // Low
+        formatNumber(_.get(item, "close", 0)), // Close
+      ],
+    }));
+
+    // Get the last available close price (current price)
+    const lastClose = formatNumber(
+      _.get(stockData[stockData.length - 1], "close", 0)
+    );
+    const lastDate = new Date(
+      _.get(stockData[stockData.length - 1], "dDate", "")
+    );
+
+    // Process Prediction Data (keep trading weekends, create line + dots)
+    const predictionLine = [];
+    const predictionPoints = [];
+
+    if (predictions && predictions.length > 0) {
+      predictionLine.push({ x: lastDate, y: lastClose }); // Start from last actual price
+
+      predictions.forEach((item) => {
+        const date = new Date(_.get(item, "dDate", ""));
+
+        const predictedClose = formatNumber(_.get(item, "close", 0));
+
+        predictionLine.push({ x: date, y: predictedClose });
+
+        // Add points for each predicted value
+        predictionPoints.push({
+          x: date,
+          y: predictedClose,
+          marker: {
+            size: 7,
+            fillColor: "#FF9800",
+            strokeColor: "#000",
+            strokeWidth: 2,
+          },
+          label: {
+            text: `Prediction: ${predictedClose}`,
+            borderColor: "#FF9800",
+            offsetY: -10,
+            style: {
+              background: "#FF9800",
+              color: "#000",
+            },
+          },
+        });
+      });
+    }
+
+    // Get Last 120 Days for Default Zoom
+    const last120Days = new Date();
+    last120Days.setDate(last120Days.getDate() - 120);
+
+    setChartData({
+      series: [
+        { name: "Stock Price", data: processedStockData },
+        {
+          name: "Predictions",
+          data: predictionLine,
+          type: "line",
+          color: "#FF9800",
+        },
+      ],
+      options: {
+        chart: {
+          type: "candlestick",
+          height: 450,
+          toolbar: { show: true },
+          zoom: { enabled: true },
+        },
+        title: {
+          text: `Stock Market Trends & Predictions`,
+          align: "left",
+        },
+        xaxis: {
+          type: "datetime",
+          min: last120Days.getTime(), // ✅ Show last 120 days
+          max: new Date().getTime() + 3 * 24 * 60 * 60 * 1000, // Extend X-axis for prediction dates
+          labels: {
+            format: "MMM dd", // Format date labels (e.g., Jan 10)
+          },
+        },
+        yaxis: {
+          tooltip: { enabled: true },
+          labels: {
+            formatter: (value) => value.toFixed(4), // ✅ Formats Y-axis Labels to 4 Decimal Places
+          },
+        },
+        tooltip: {
+          enabled: true,
+          theme: "dark",
+          y: {
+            formatter: (value) => value.toFixed(4), // ✅ Formats Tooltip Values to 4 Decimal Places
+          },
+        },
+        annotations: {
+          points: predictionPoints, // ✅ Prediction Points with Labels
+        },
+      },
+    });
+  }, [stockData, predictions]);
+
+  return (
+    <div className="w-full">
+      {chartData ? (
+        <Chart
+          options={chartData.options}
+          series={chartData.series}
+          type="candlestick"
+          height={450}
+        />
+      ) : (
+        <p>Loading chart...</p>
+      )}
+    </div>
+  );
+};
+
+const __StockChart = ({ stockData }) => {
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const seriesRef = useRef(null);
+
+  useEffect(() => {
+    if (!stockData || stockData.length === 0) return;
+
+    if (!chartRef.current) {
+      chartRef.current = createChart(chartContainerRef.current, {
+        width: chartContainerRef.current.clientWidth || 800,
+        height: 500,
+        layout: {
+          background: { color: "#0d1117" }, // Dark mode
+          textColor: "#c9d1d9",
+        },
+        grid: {
+          vertLines: { color: "#21262d" },
+          horzLines: { color: "#21262d" },
+        },
+        timeScale: {
+          timeVisible: true,
+          borderColor: "#485c7b",
+        },
+      });
+    }
+
+    const chart = chartRef.current;
+
+    // **Fix: Ensure series is added only once**
+    if (!seriesRef.current) {
+      seriesRef.current = chart.addSeries({ type: "Candlestick" }); // ✅ Correct function
+    }
+
+    // **Fix: Ensure correct time format**
+    seriesRef.current.setData(
+      stockData.map((item) => ({
+        time: new Date(item.dDate).getTime() / 1000, // Convert to UNIX timestamp
+        open: item.open,
+        high: item.high,
+        low: item.low,
+        close: item.close,
+      }))
+    );
+
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+        seriesRef.current = null;
+      }
+    };
+  }, [stockData]);
+
+  return (
+    <div ref={chartContainerRef} style={{ width: "100%", height: "500px" }} />
+  );
+};
+
+const _StockChart = ({ data }) => {
   ChartJS.register(...registerables);
 
   // Format the chart data
   const chartData = {
-    labels: data.map((d) => d.dTime), // X-Axis (Dates)
+    labels: data.map((d) => d.dDate), // X-Axis (Dates)
     datasets: [
       {
         label: "Close Price",
@@ -84,7 +283,7 @@ const StockChart = ({ data }) => {
   };
 
   const volumeData = {
-    labels: data.map((d) => d.dTime),
+    labels: data.map((d) => d.dDate),
     datasets: [
       {
         label: "Volume",
@@ -152,106 +351,56 @@ const StockChart = ({ data }) => {
   );
 };
 
-const __StockChart = ({ data }) => {
-  ChartJS.register(...registerables);
-
-  const chartData = {
-    labels: data.map((d) => d.dTime),
-    datasets: [
-      {
-        label: "Close Price",
-        data: data.map((d) => d.close),
-        borderColor: "blue",
-        fill: false,
-      },
-      {
-        label: "SMA (20)",
-        data: data.map((d) => d.SMA_20),
-        borderColor: "orange",
-        fill: false,
-      },
-      {
-        label: "SMA (50)",
-        data: data.map((d) => d.SMA_50),
-        borderColor: "green",
-        fill: false,
-      },
-    ],
-  };
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false, // Allows setting a custom height & width
-    plugins: {
-      legend: {
-        labels: {
-          color: "#ffffff", // Light text for dark mode
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: "#ffffff" }, // X-axis labels
-        grid: { color: "rgba(255, 255, 255, 0.2)" }, // Lighter grid lines
-      },
-      y: {
-        ticks: { color: "#ffffff" }, // Y-axis labels
-        grid: { color: "rgba(255, 255, 255, 0.2)" }, // Lighter grid lines
-      },
-    },
-  };
-
-  return (
-    <div
-      style={{
-        width: "80vw",
-        height: "50vh",
-        backgroundColor: "#1e1e1e",
-        padding: "10px",
-        borderRadius: "8px",
-      }}
-    >
-      <Line data={chartData} options={options} />
-    </div>
-  );
-};
-
 const StockTable = ({ data }) => {
   const columns = [
-    { field: "dTime", headerName: "#", width: 250 }, // Numeric pixel width
+    { field: "dDate", headerName: "Date", width: 130 },
     { field: "open", headerName: "Open", width: 100 },
     { field: "high", headerName: "High", width: 100 },
-    {
-      field: "low",
-      headerName: "Low",
-      width: 100,
-    },
+    { field: "low", headerName: "Low", width: 100 },
     { field: "close", headerName: "Close", width: 100 },
-    { field: "volume", headerName: "Volume", width: 150 },
+    { field: "volume", headerName: "Volume", width: 120 },
+    { field: "SMA_20", headerName: "SMA (20)", width: 120 },
+    { field: "EMA_20", headerName: "EMA (20)", width: 120 },
+    { field: "RSI", headerName: "RSI", width: 100 },
+    { field: "MACD", headerName: "MACD", width: 100 },
+    { field: "Signal_Line", headerName: "Signal", width: 100 },
+    { field: "BB_Upper", headerName: "BB Upper", width: 120 },
+    { field: "BB_Lower", headerName: "BB Lower", width: 120 },
   ];
 
-  const rows = data.map((row, index) => ({
-    id: index + 1,
-    dTime: row.dTime,
-    open: row.open,
-    high: row.high,
-    low: row.low,
-    close: row.close,
-    volume: row.volume,
-  }));
+  const rows = data
+    .slice()
+    .reverse()
+    .map((row, index) => ({
+      id: index + 1,
+      dDate: _.get(row, "dDate", "N/A"),
+      open: formatNumber(_.get(row, "open", null)),
+      high: formatNumber(_.get(row, "high", null)),
+      low: formatNumber(_.get(row, "low", null)),
+      close: formatNumber(_.get(row, "close", null)),
+      volume: _.get(row, "volume", "N/A"),
+      SMA_20: formatNumber(_.get(row, "SMA_20", null)),
+      EMA_20: formatNumber(_.get(row, "EMA_20", null)),
+      RSI: formatNumber(_.get(row, "RSI", null)),
+      MACD: formatNumber(_.get(row, "MACD", null)),
+      Signal_Line: formatNumber(_.get(row, "Signal_Line", null)),
+      BB_Upper: formatNumber(_.get(row, "BB_Upper", null)),
+      BB_Lower: formatNumber(_.get(row, "BB_Lower", null)),
+    }));
 
   return (
-    <Paper className="w-full h-400">
+    <Paper className="w-full h-400 p-4">
       <DataGrid
         rows={rows}
         columns={columns}
-        pageSize={5}
-        rowsPerPageOptions={[5, 10, 25]}
+        pageSize={10}
+        rowsPerPageOptions={[10, 25, 50]}
       />
     </Paper>
   );
 };
 
-const MarketTrends = ({ data }) => {
+const MarketTrends = ({ data, predictions }) => {
   return (
     <motion.div
       initial={{ x: -20, opacity: 0 }}
@@ -263,7 +412,12 @@ const MarketTrends = ({ data }) => {
           <Typography variant="h5" style={{ marginTop: "20px" }}>
             Market Trends
           </Typography>
-          <StockChart className="w-full" data={data} />
+          <StockChart
+            className="w-full"
+            stockData={data}
+            data={data}
+            predictions={predictions}
+          />
         </>
       )}
       <Typography variant="h5" style={{ marginTop: "20px" }}>
