@@ -77,9 +77,14 @@ const StockChart = ({ stockData, predictions }) => {
       });
     }
 
-    // Get Last 120 Days for Default Zoom
-    const last120Days = new Date();
-    last120Days.setDate(last120Days.getDate() - 120);
+    // Get Last 60 Days for Default Zoom
+    const last60Days = new Date();
+    last60Days.setDate(last60Days.getDate() - 60);
+    console.log(
+      _.get(_.head(predictions), "dDate"),
+      new Date(_.get(_.head(predictions), "dDate")),
+      new Date(_.get(_.head(predictions), "dDate")).getDate()
+    );
 
     setChartData({
       series: [
@@ -104,10 +109,10 @@ const StockChart = ({ stockData, predictions }) => {
         },
         xaxis: {
           type: "datetime",
-          min: last120Days.getTime(), // ✅ Show last 120 days
+          min: last60Days.getTime(), // ✅ Show last 60 days
           max: new Date().getTime() + 3 * 24 * 60 * 60 * 1000, // Extend X-axis for prediction dates
           labels: {
-            format: "MMM dd", // Format date labels (e.g., Jan 10)
+            format: "yyyy-MM-dd", // Format date labels (e.g., Jan 10)
           },
         },
         yaxis: {
@@ -124,7 +129,31 @@ const StockChart = ({ stockData, predictions }) => {
           },
         },
         annotations: {
-          points: predictionPoints, // ✅ Prediction Points with Labels
+          xaxis: [
+            {
+              x: new Date(_.get(_.head(predictions), "dDate")).getTime(),
+              borderColor: "#00E396",
+              label: {
+                borderColor: "#00E396",
+                style: {
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  color: "#fff",
+                  background: "#00E396",
+                  width: "100%",
+                  textAlign: "right", // ✅ Centers text for better readability
+                  padding: { left: 2, right: 10, top: 5, bottom: 5 },
+                },
+                orientation: "horizontal",
+                offsetY: 7,
+                text:
+                  "Prediction(Close): " +
+                  formatNumber(
+                    parseFloat(_.get(_.head(predictions), "close", 0))
+                  ),
+              },
+            },
+          ],
         },
       },
     });
