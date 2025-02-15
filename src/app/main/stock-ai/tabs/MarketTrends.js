@@ -40,6 +40,24 @@ const StockChart = ({ stockData, predictions }) => {
       _.get(stockData[stockData.length - 1], "dDate", "")
     );
 
+    const lastStockPoint = {
+      x: lastDate,
+      y: lastClose,
+      marker: {
+        size: 7,
+        fillColor: "#00E396",
+        strokeColor: "#000",
+        strokeWidth: 2,
+      },
+      label: {
+        text: `Last Close: ${lastClose}`,
+        borderColor: "#00E396",
+        offsetY: -10,
+        style: { background: "#00E396", color: "#000" },
+      },
+    };
+    processedStockData.push(lastStockPoint);
+
     // Process Prediction Data (keep trading weekends, create line + dots)
     const predictionLine = [];
     const predictionPoints = [];
@@ -80,11 +98,6 @@ const StockChart = ({ stockData, predictions }) => {
     // Get Last 60 Days for Default Zoom
     const last60Days = new Date();
     last60Days.setDate(last60Days.getDate() - 60);
-    console.log(
-      _.get(_.head(predictions), "dDate"),
-      new Date(_.get(_.head(predictions), "dDate")),
-      new Date(_.get(_.head(predictions), "dDate")).getDate()
-    );
 
     setChartData({
       series: [
@@ -94,6 +107,10 @@ const StockChart = ({ stockData, predictions }) => {
           data: predictionLine,
           type: "line",
           color: "#FF9800",
+          stroke: {
+            width: 3, // Make it thicker for better visibility
+            dashArray: 5, // Ensures the line is dashed
+          },
         },
       ],
       options: {
@@ -109,7 +126,7 @@ const StockChart = ({ stockData, predictions }) => {
         },
         xaxis: {
           type: "datetime",
-          min: last60Days.getTime(), // ✅ Show last 60 days
+          min: last60Days.getTime(), // Show last 60 days
           max: new Date().getTime() + 3 * 24 * 60 * 60 * 1000, // Extend X-axis for prediction dates
           labels: {
             format: "yyyy-MM-dd", // Format date labels (e.g., Jan 10)
@@ -118,14 +135,14 @@ const StockChart = ({ stockData, predictions }) => {
         yaxis: {
           tooltip: { enabled: true },
           labels: {
-            formatter: (value) => value.toFixed(4), // ✅ Formats Y-axis Labels to 4 Decimal Places
+            formatter: (value) => value.toFixed(4), // Formats Y-axis Labels to 4 Decimal Places
           },
         },
         tooltip: {
           enabled: true,
           theme: "dark",
           y: {
-            formatter: (value) => value.toFixed(4), // ✅ Formats Tooltip Values to 4 Decimal Places
+            formatter: (value) => value.toFixed(4), // Formats Tooltip Values to 4 Decimal Places
           },
         },
         annotations: {
@@ -141,13 +158,13 @@ const StockChart = ({ stockData, predictions }) => {
                   color: "#fff",
                   background: "#00E396",
                   width: "100%",
-                  textAlign: "right", // ✅ Centers text for better readability
-                  padding: { left: 2, right: 10, top: 5, bottom: 5 },
+                  textAlign: "right", // Centers text for better readability
+                  padding: { left: 5, right: 10, top: 5, bottom: 5 },
                 },
                 orientation: "horizontal",
                 offsetY: 7,
                 text:
-                  "Prediction(Close): " +
+                  "📊 Prediction: " +
                   formatNumber(
                     parseFloat(_.get(_.head(predictions), "close", 0))
                   ),
@@ -172,65 +189,6 @@ const StockChart = ({ stockData, predictions }) => {
         <p>Loading chart...</p>
       )}
     </div>
-  );
-};
-
-const __StockChart = ({ stockData }) => {
-  const chartContainerRef = useRef(null);
-  const chartRef = useRef(null);
-  const seriesRef = useRef(null);
-
-  useEffect(() => {
-    if (!stockData || stockData.length === 0) return;
-
-    if (!chartRef.current) {
-      chartRef.current = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth || 800,
-        height: 500,
-        layout: {
-          background: { color: "#0d1117" }, // Dark mode
-          textColor: "#c9d1d9",
-        },
-        grid: {
-          vertLines: { color: "#21262d" },
-          horzLines: { color: "#21262d" },
-        },
-        timeScale: {
-          timeVisible: true,
-          borderColor: "#485c7b",
-        },
-      });
-    }
-
-    const chart = chartRef.current;
-
-    // **Fix: Ensure series is added only once**
-    if (!seriesRef.current) {
-      seriesRef.current = chart.addSeries({ type: "Candlestick" }); // ✅ Correct function
-    }
-
-    // **Fix: Ensure correct time format**
-    seriesRef.current.setData(
-      stockData.map((item) => ({
-        time: new Date(item.dDate).getTime() / 1000, // Convert to UNIX timestamp
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
-      }))
-    );
-
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
-        seriesRef.current = null;
-      }
-    };
-  }, [stockData]);
-
-  return (
-    <div ref={chartContainerRef} style={{ width: "100%", height: "500px" }} />
   );
 };
 
